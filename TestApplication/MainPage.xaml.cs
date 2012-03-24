@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.IO;
 
 namespace TestApplication
 {
@@ -19,13 +20,14 @@ namespace TestApplication
         public MainPage()
         {
             InitializeComponent();
-            _wc.Encoding = new GB2312.GB2312Encoding();
-            _wc.DownloadStringCompleted += (ss, ee) =>
+
+            _wc.OpenReadCompleted += (ss, ee) =>
             {
                 try
                 {
                     if (!ee.Cancelled)
-                        txtResult.Text = ee.Result;
+                        using (StreamReader reader = new StreamReader(ee.Result, new GB2312.GB2312Encoding()))
+                            txtResult.Text = reader.ReadToEnd();
                 }
                 catch { }
             };
@@ -36,7 +38,7 @@ namespace TestApplication
             try
             {
                 _wc.CancelAsync();
-                _wc.DownloadStringAsync(new Uri(txtUrl.Text));
+                _wc.OpenReadAsync(new Uri(txtUrl.Text));
             }
             catch { }
         }

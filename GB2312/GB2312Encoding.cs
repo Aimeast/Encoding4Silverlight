@@ -6,6 +6,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace GB2312
@@ -202,7 +203,13 @@ namespace GB2312
                 _gb2312ToUnicode = new ushort[0x10000];
                 _unicodeToGb2312 = new ushort[0x10000];
 
-                using (Stream stream = typeof(Map).Assembly.GetManifestResourceStream(typeof(Map).Namespace + ".gb2312.bin"))
+                /*
+                 * According to many feedbacks, add this automatic function for find resource in revision 1.0.0.1.
+                 * We suggest that use the old method as below if you understand how to embed the resource.
+                 * Please make sure the gb2312.bin file was correctly embedded if throw an exception at here.
+                 */
+                //using (Stream stream = typeof(Map).Assembly.GetManifestResourceStream(typeof(Map).Namespace + ".gb2312.bin"))
+                using (Stream stream = typeof(Map).Assembly.GetManifestResourceStream(typeof(Map).Assembly.GetManifestResourceNames().First(s => s.EndsWith(".gb2312.bin"))))
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
                     for (int i = 0; i < 0xffff; i++)
@@ -230,7 +237,6 @@ namespace GB2312
 
         private sealed class GB2312Decoder : Decoder
         {
-            private GB2312Decoder() { }
             private GB2312Encoding _encoding = null;
 
             public GB2312Decoder(GB2312Encoding encoding)

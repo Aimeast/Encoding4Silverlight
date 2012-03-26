@@ -14,11 +14,37 @@ namespace GB2312
     public sealed class GB2312Encoding : Encoding
     {
         private const char LEAD_BYTE_CHAR = '\uFFFE';
+        private static char[] _gb2312ToUnicode = null;
+        private static ushort[] _unicodeToGb2312 = null;
 
         static GB2312Encoding()
         {
             if (!BitConverter.IsLittleEndian)
                 throw new PlatformNotSupportedException("Not supported big endian platform.");
+
+            _gb2312ToUnicode = new char[0x10000];
+            _unicodeToGb2312 = new ushort[0x10000];
+
+            /*
+             * According to many feedbacks, add this automatic function for finding resource in revision 1.0.0.1.
+             * We suggest that use the old method as below if you understand how to embed the resource.
+             * Please make sure the gb2312.bin file was correctly embedded if throw an exception at here.
+             */
+            //using (Stream stream = typeof(GB2312Encoding).Assembly.GetManifestResourceStream(typeof(GB2312Encoding).Namespace + ".gb2312.bin"))
+            using (Stream stream = typeof(GB2312Encoding).Assembly.GetManifestResourceStream(typeof(GB2312Encoding).Assembly.GetManifestResourceNames().First(s => s.EndsWith(".gb2312.bin"))))
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                for (int i = 0; i < 0xffff; i++)
+                {
+                    ushort u = reader.ReadUInt16();
+                    _unicodeToGb2312[i] = u;
+                }
+                for (int i = 0; i < 0xffff; i++)
+                {
+                    ushort u = reader.ReadUInt16();
+                    _gb2312ToUnicode[i] = (char)u;
+                }
+            }
         }
 
         public override int GetByteCount(char[] chars, int index, int count)
@@ -30,7 +56,7 @@ namespace GB2312
             for (int i = 0; i < count; index++, byteCount++, i++)
             {
                 c = chars[index];
-                u = Map.UnicodeToGB2312(c);
+                u = _unicodeToGb2312[c];
                 if (u > 0xff)
                     byteCount++;
             }
@@ -47,7 +73,7 @@ namespace GB2312
             for (int i = 0; i < charCount; charIndex++, byteIndex++, byteCount++, i++)
             {
                 c = chars[charIndex];
-                u = Map.UnicodeToGB2312(c);
+                u = _unicodeToGb2312[c];
                 if (u == 0 && c != 0)
                 {
                     bytes[byteIndex] = 0x3f;    // 0x3f == '?'
@@ -89,7 +115,7 @@ namespace GB2312
                 }
 
                 u = (ushort)(u << 8 | bytes[index]);
-                c = Map.GB2312ToUnicode(u);
+                c = _gb2312ToUnicode[u];
                 if (c == LEAD_BYTE_CHAR)
                 {
                     if (i < count - 1)
@@ -129,7 +155,7 @@ namespace GB2312
                 }
 
                 u = (ushort)(u << 8 | bytes[byteIndex]);
-                c = Map.GB2312ToUnicode(u);
+                c = _gb2312ToUnicode[u];
                 if (c == LEAD_BYTE_CHAR)
                 {
                     if (i < byteCount - 1)
@@ -137,7 +163,7 @@ namespace GB2312
                         byteIndex++;
                         i++;
                         u = (ushort)(u << 8 | bytes[byteIndex]);
-                        c = Map.GB2312ToUnicode(u);
+                        c = _gb2312ToUnicode[u];
                     }
                     else if (decoder == null)
                     {
@@ -190,48 +216,6 @@ namespace GB2312
             get
             {
                 return "gb2312";
-            }
-        }
-
-        private static class Map
-        {
-            private static ushort[] _gb2312ToUnicode = null;
-            private static ushort[] _unicodeToGb2312 = null;
-
-            static Map()
-            {
-                _gb2312ToUnicode = new ushort[0x10000];
-                _unicodeToGb2312 = new ushort[0x10000];
-
-                /*
-                 * According to many feedbacks, add this automatic function for find resource in revision 1.0.0.1.
-                 * We suggest that use the old method as below if you understand how to embed the resource.
-                 * Please make sure the gb2312.bin file was correctly embedded if throw an exception at here.
-                 */
-                //using (Stream stream = typeof(Map).Assembly.GetManifestResourceStream(typeof(Map).Namespace + ".gb2312.bin"))
-                using (Stream stream = typeof(Map).Assembly.GetManifestResourceStream(typeof(Map).Assembly.GetManifestResourceNames().First(s => s.EndsWith(".gb2312.bin"))))
-                using (BinaryReader reader = new BinaryReader(stream))
-                {
-                    for (int i = 0; i < 0xffff; i++)
-                    {
-                        ushort u = reader.ReadUInt16();
-                        _unicodeToGb2312[i] = u;
-                    }
-                    for (int i = 0; i < 0xffff; i++)
-                    {
-                        ushort u = reader.ReadUInt16();
-                        _gb2312ToUnicode[i] = u;
-                    }
-                }
-            }
-
-            public static char GB2312ToUnicode(ushort code)
-            {
-                return (char)_gb2312ToUnicode[code];
-            }
-            public static ushort UnicodeToGB2312(char ch)
-            {
-                return _unicodeToGb2312[ch];
             }
         }
 

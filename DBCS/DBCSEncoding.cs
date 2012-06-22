@@ -5,46 +5,73 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace GB2312
+namespace DBCSCodePage
 {
-    public sealed class GB2312Encoding : Encoding
+    public sealed class DBCSEncoding : Encoding
     {
         private const char LEAD_BYTE_CHAR = '\uFFFE';
-        private static char[] _gb2312ToUnicode = null;
-        private static ushort[] _unicodeToGb2312 = null;
+        private char[] _dbcsToUnicode = null;
+        private ushort[] _unicodeToDbcs = null;
+        private string _webName = null;
 
-        static GB2312Encoding()
+        private static Dictionary<string, Tuple<char[], ushort[]>> _cache = null;
+
+        static DBCSEncoding()
         {
             if (!BitConverter.IsLittleEndian)
                 throw new PlatformNotSupportedException("Not supported big endian platform.");
 
-            _gb2312ToUnicode = new char[0x10000];
-            _unicodeToGb2312 = new ushort[0x10000];
+            _cache = new Dictionary<string, Tuple<char[], ushort[]>>();
+        }
+
+        private DBCSEncoding() { }
+
+        public static DBCSEncoding GetDBCSEncoding(string name)
+        {
+            name = name.ToLower();
+            DBCSEncoding encoding = new DBCSEncoding();
+            encoding._webName = name;
+            if (_cache.ContainsKey(name))
+            {
+                var tuple = _cache[name];
+                encoding._dbcsToUnicode = tuple.Item1;
+                encoding._unicodeToDbcs = tuple.Item2;
+                return encoding;
+            }
+
+            var dbcsToUnicode = new char[0x10000];
+            var unicodeToDbcs = new ushort[0x10000];
 
             /*
              * According to many feedbacks, add this automatic function for finding resource in revision 1.0.0.1.
              * We suggest that use the old method as below if you understand how to embed the resource.
-             * Please make sure the gb2312.bin file was correctly embedded if throw an exception at here.
+             * Please make sure the *.bin file was correctly embedded if throw an exception at here.
              */
-            //using (Stream stream = typeof(GB2312Encoding).Assembly.GetManifestResourceStream(typeof(GB2312Encoding).Namespace + ".gb2312.bin"))
-            using (Stream stream = typeof(GB2312Encoding).Assembly.GetManifestResourceStream(typeof(GB2312Encoding).Assembly.GetManifestResourceNames().First(s => s.EndsWith(".gb2312.bin"))))
+            //using (Stream stream = typeof(DBCSEncoding).Assembly.GetManifestResourceStream(typeof(DBCSEncoding).Namespace + "." + name + ".bin"))
+            using (Stream stream = typeof(DBCSEncoding).Assembly.GetManifestResourceStream(typeof(DBCSEncoding).Assembly.GetManifestResourceNames().Single(s => s.EndsWith("." + name + ".bin"))))
             using (BinaryReader reader = new BinaryReader(stream))
             {
                 for (int i = 0; i < 0xffff; i++)
                 {
                     ushort u = reader.ReadUInt16();
-                    _unicodeToGb2312[i] = u;
+                    unicodeToDbcs[i] = u;
                 }
                 for (int i = 0; i < 0xffff; i++)
                 {
                     ushort u = reader.ReadUInt16();
-                    _gb2312ToUnicode[i] = (char)u;
+                    dbcsToUnicode[i] = (char)u;
                 }
             }
+
+            _cache[name] = new Tuple<char[], ushort[]>(dbcsToUnicode, unicodeToDbcs);
+            encoding._dbcsToUnicode = dbcsToUnicode;
+            encoding._unicodeToDbcs = unicodeToDbcs;
+            return encoding;
         }
 
         public override int GetByteCount(char[] chars, int index, int count)
@@ -56,7 +83,7 @@ namespace GB2312
             for (int i = 0; i < count; index++, byteCount++, i++)
             {
                 c = chars[index];
-                u = _unicodeToGb2312[c];
+                u = _unicodeToDbcs[c];
                 if (u > 0xff)
                     byteCount++;
             }
@@ -73,7 +100,7 @@ namespace GB2312
             for (int i = 0; i < charCount; charIndex++, byteIndex++, byteCount++, i++)
             {
                 c = chars[charIndex];
-                u = _unicodeToGb2312[c];
+                u = _unicodeToDbcs[c];
                 if (u == 0 && c != 0)
                 {
                     bytes[byteIndex] = 0x3f;    // 0x3f == '?'
@@ -99,7 +126,7 @@ namespace GB2312
             return GetCharCount(bytes, index, count, null);
         }
 
-        private int GetCharCount(byte[] bytes, int index, int count, GB2312Decoder decoder)
+        private int GetCharCount(byte[] bytes, int index, int count, DBCSDecoder decoder)
         {
             int charCount = 0;
             ushort u;
@@ -115,7 +142,7 @@ namespace GB2312
                 }
 
                 u = (ushort)(u << 8 | bytes[index]);
-                c = _gb2312ToUnicode[u];
+                c = _dbcsToUnicode[u];
                 if (c == LEAD_BYTE_CHAR)
                 {
                     if (i < count - 1)
@@ -139,7 +166,7 @@ namespace GB2312
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, null);
         }
 
-        private int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, GB2312Decoder decoder)
+        private int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, DBCSDecoder decoder)
         {
             int charCount = 0;
             ushort u;
@@ -155,7 +182,7 @@ namespace GB2312
                 }
 
                 u = (ushort)(u << 8 | bytes[byteIndex]);
-                c = _gb2312ToUnicode[u];
+                c = _dbcsToUnicode[u];
                 if (c == LEAD_BYTE_CHAR)
                 {
                     if (i < byteCount - 1)
@@ -163,7 +190,7 @@ namespace GB2312
                         byteIndex++;
                         i++;
                         u = (ushort)(u << 8 | bytes[byteIndex]);
-                        c = _gb2312ToUnicode[u];
+                        c = _dbcsToUnicode[u];
                     }
                     else if (decoder == null)
                     {
@@ -208,22 +235,22 @@ namespace GB2312
 
         public override Decoder GetDecoder()
         {
-            return new GB2312Decoder(this);
+            return new DBCSDecoder(this);
         }
 
         public override string WebName
         {
             get
             {
-                return "gb2312";
+                return _webName;
             }
         }
 
-        private sealed class GB2312Decoder : Decoder
+        private sealed class DBCSDecoder : Decoder
         {
-            private GB2312Encoding _encoding = null;
+            private DBCSEncoding _encoding = null;
 
-            public GB2312Decoder(GB2312Encoding encoding)
+            public DBCSDecoder(DBCSEncoding encoding)
             {
                 _encoding = encoding;
             }

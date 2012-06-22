@@ -11,8 +11,9 @@
             <RowDefinition Height="25" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <TextBox Name="txtUrl" Margin="0,0,120,0" Text="http://localhost:4031/SampleData.txt" />
+        <TextBox Name="txtUrl" Margin="0,0,220,0" Text="http://localhost:4031/" />
+        <ComboBox Name="comboEncoding" Margin="0,0,110,0" Width="100" HorizontalAlignment="Right" SelectionChanged="comboEncoding_SelectionChanged" />
         <Button Content="Download" Width="100" HorizontalAlignment="Right" Click="Button_Click" />
-        <TextBox Name="txtResult" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+        <TextBox Name="txtResult" Grid.Row="1" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontSize="15" />
     </Grid>
 </UserControl>

@@ -15,18 +15,25 @@ namespace TestApplication
 {
     public partial class MainPage : UserControl
     {
+        string[] _supported = new[] { "GB2312", "BIG5" };
+
         WebClient _wc = new WebClient();
+        string _baseUrl;
 
         public MainPage()
         {
             InitializeComponent();
+
+            _baseUrl = txtUrl.Text;
+            comboEncoding.ItemsSource = _supported;
+            comboEncoding.SelectedIndex = 0;
 
             _wc.OpenReadCompleted += (ss, ee) =>
             {
                 try
                 {
                     if (!ee.Cancelled)
-                        using (StreamReader reader = new StreamReader(ee.Result, new GB2312.GB2312Encoding()))
+                        using (StreamReader reader = new StreamReader(ee.Result, DBCSCodePage.DBCSEncoding.GetDBCSEncoding(_supported[comboEncoding.SelectedIndex]), false))
                             txtResult.Text = reader.ReadToEnd();
                 }
                 catch { }
@@ -41,6 +48,11 @@ namespace TestApplication
                 _wc.OpenReadAsync(new Uri(txtUrl.Text));
             }
             catch { }
+        }
+
+        private void comboEncoding_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            txtUrl.Text = _baseUrl + _supported[comboEncoding.SelectedIndex].ToLower() + ".txt";
         }
     }
 }

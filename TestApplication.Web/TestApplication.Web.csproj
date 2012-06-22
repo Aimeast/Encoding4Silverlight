@@ -52,8 +52,9 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="big5.txt" />
     <Content Include="ClientBin\TestApplication.xap" />
-    <Content Include="SampleData.txt" />
+    <Content Include="gb2312.txt" />
     <Content Include="Silverlight.js" />
     <Content Include="TestApplicationTestPage.aspx" />
     <Content Include="TestApplicationTestPage.html" />

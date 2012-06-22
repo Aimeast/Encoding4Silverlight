@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GB2312", "GB2312\GB2312.csproj", "{771FA000-73DC-48DA-A16E-4D1C31322997}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBCS", "DBCS\DBCS.csproj", "{771FA000-73DC-48DA-A16E-4D1C31322997}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApplication", "TestApplication\TestApplication.csproj", "{EAE0828F-ED9E-4D71-ABA1-24E07A6A3F68}"
 EndProject

@@ -91,9 +91,9 @@
     <None Include="Properties\AppManifest.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GB2312\GB2312.csproj">
+    <ProjectReference Include="..\DBCS\DBCS.csproj">
       <Project>{771FA000-73DC-48DA-A16E-4D1C31322997}</Project>
-      <Name>GB2312</Name>
+      <Name>DBCS</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Silverlight\$(SilverlightVersion)\Microsoft.Silverlight.CSharp.targets" />
